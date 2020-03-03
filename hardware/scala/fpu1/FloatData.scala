@@ -3,8 +3,7 @@ import spinal.core._
 import spinal.lib._
 
 case class FloatData(exponentSize: Int,
-                     mantissaSize: Int,
-                     exponentBias: Int) extends Bundle {
+                     mantissaSize: Int) extends Bundle {
 
   /** Mantissa field with implicit first bit */
   val mantissa = UInt(mantissaSize bits)
@@ -33,7 +32,7 @@ case class FloatData(exponentSize: Int,
 
   def isNormalized = mantissa(mantissaSize -1) === True
 
-  def isUnderflow = (exponent < -exponentBias)
+  def isUnderflow = (exponent <= -mantissaSize)
 
   /** Return true if number is +/- 0 */
   def isZero = isMantissaZero && isExponentZero
@@ -44,9 +43,14 @@ case class FloatData(exponentSize: Int,
     mantissa  := 0
   }
 
-  def NormalizedFlow = {
-    val ret = RegFlow(this)
+  def init(): this.type = {
+    val initValue = cloneOf(this)
+    initValue.clear
+    this init (initValue)
+    this
+  }
 
+  def NormalizedFlow = {
     when (isUnderflow) {
       clear
     } elsewhen (isExponentNegative) {
@@ -57,10 +61,9 @@ case class FloatData(exponentSize: Int,
       }
     }
 
-    when (isNormalized || isExponentZero) {
-      ret.valid := True
-      ret.payload := this
-    }
+    val ret = Flow(this)
+    ret.payload := this
+    ret.valid  := isNormalized || isExponentZero
     ret
   }
 }

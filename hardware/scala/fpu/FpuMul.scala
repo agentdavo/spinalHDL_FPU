@@ -1,5 +1,3 @@
-package fpu
-
 import spinal.core._
 import spinal.lib._
 import spinal.lib.experimental.math._
